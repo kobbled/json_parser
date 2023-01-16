@@ -100,7 +100,7 @@ void json_parser_parse_next(JSONParser *parser) {
 
     *end = '\0';
     parser->index++;
-    
+
     #ifdef DEBUG
       printf("found string: %s\n", strdup(start));
     #endif
@@ -164,7 +164,7 @@ void json_parser_parse_next(JSONParser *parser) {
         parser->current_array->number_value = value;
         printf("value: %lf , index: %d\n", parser->current_array->number_value, parser->index);
       }
-    } else if (c == 't') {
+  } else if (c == 't') {
       // Parse true value
       parser->index += 4;
 
@@ -176,7 +176,7 @@ void json_parser_parse_next(JSONParser *parser) {
       }
       printf("value: true , index: %d\n", parser->index);
 
-    } else if (c == 'f') {
+  } else if (c == 'f') {
       // Parse false value
       parser->index += 5;
 
@@ -189,7 +189,7 @@ void json_parser_parse_next(JSONParser *parser) {
 
       printf("value: false , index: %d\n", parser->index);
 
-    } else if (c == 'n') {
+  } else if (c == 'n') {
       // Parse null value
       parser->index += 4;
 
@@ -255,7 +255,7 @@ void json_parser_parse_next(JSONParser *parser) {
 
       #ifdef DEBUG
         if (parser->prev_index != parser->index) {
-      printf("key: %s , index: %d\n", key, parser->index);
+          printf("key: %s , index: %d\n", key, parser->index);
         }
       #endif
 
@@ -348,52 +348,75 @@ void json_parser_parse_next(JSONParser *parser) {
   }
 }
 
-
-// Test the JSON parser
-void test_json_parser() {
+void test_simple_object() {
   // Parse simple object
   char json_string[] = "{\"key1\":\"value1\",\"key2\":123}";
-  // char json_string[] = "{\"key1\":\"value1\",\"key2\":\"value2\"}";
   printf("parsing: %s\n", json_string);
 
   JSONParser parser;
   json_parser_init(&parser, json_string);
   json_parser_parse_next(&parser);
+
+  //root object
   assert(parser.root->type == JSON_TYPE_OBJECT);
-  assert(parser.root->next == NULL);
   assert(parser.root->key == NULL);
   assert(parser.root->string_value == NULL);
   assert(parser.root->number_value == 0);
+  
+  // "key1":"value1
   assert(parser.root->next->type == JSON_TYPE_STRING);
   assert(strcmp(parser.root->next->key, "key1") == 0);
   assert(strcmp(parser.root->next->string_value, "value1") == 0);
   assert(parser.root->next->number_value == 0);
+
+  // "key2":123
   assert(parser.root->next->next->type == JSON_TYPE_NUMBER);
   assert(strcmp(parser.root->next->next->key, "key2") == 0);
-  assert(parser.root->next->next->string_value == "value2");
-  assert(parser.root->next->next->number_value == 0);
+  assert(parser.root->next->next->string_value == NULL);
+  assert(parser.root->next->next->number_value == 123);
   assert(parser.root->next->next->next == NULL);
 
-  // // Parse simple array
-  // strcpy(json_string, "[\"value1\",123]");
-  // json_parser_init(&parser, json_string);
-  // json_parser_parse_next(&parser);
-  // assert(parser.root->type == JSON_TYPE_ARRAY);
-  // assert(parser.root->next == NULL);
-  // assert(parser.root->key == NULL);
-  // assert(parser.root->string_value == NULL);
-  // assert(parser.root->number_value == 0);
-  // assert(parser.root->next->type == JSON_TYPE_STRING);
-  // assert(parser.root->next->key == NULL);
-  // assert(strcmp(parser.root->next->string_value, "value1") == 0);
-  // assert(parser.root->next->number_value == 0);
-  // assert(parser.root->next->next->type == JSON_TYPE_NUMBER);
-  // assert(parser.root->next->next->key == NULL);
-  // assert(parser.root->next->next->string_value == NULL);
-  // assert(parser.root->next->next->number_value == 123);
-  // assert(parser.root->next->next->next == NULL);
+}
+
+void test_simple_array() {
+  // Parse simple object
+  char json_string[] = "[\"value1\",\"value2\",-123,3.14159]";
+  printf("parsing: %s\n", json_string);
+
+  JSONParser parser;
+  json_parser_init(&parser, json_string);
+  json_parser_parse_next(&parser);
+
+  assert(parser.root->type == JSON_TYPE_ARRAY);
+  assert(parser.root->string_value == NULL);
+  assert(parser.root->number_value == 0);
+  // "value1"
+  assert(parser.root->next->type == JSON_TYPE_STRING);
+  assert(strcmp(parser.root->next->string_value, "value1") == 0);
+  assert(parser.root->next->number_value == 0);
+  // "value2"
+  assert(parser.root->next->next->type == JSON_TYPE_STRING);
+  assert(strcmp(parser.root->next->next->string_value, "value2") == 0);
+  assert(parser.root->next->next->number_value == 0);
+  // 123
+  assert(parser.root->next->next->next->type == JSON_TYPE_NUMBER);
+  assert(parser.root->next->next->next->string_value == NULL);
+  assert(parser.root->next->next->next->number_value == -123);
+  // 3.14159
+  assert(parser.root->next->next->next->next->type == JSON_TYPE_NUMBER);
+  assert(parser.root->next->next->next->next->string_value == NULL);
+  assert(parser.root->next->next->next->next->number_value == 3.14159);
+
+
+}
+
+
+// Test the JSON parser
+void tests() {
+  test_simple_object();
+  test_simple_array();
 }
 
 void main() {
-  test_json_parser();
+  tests();
 }
