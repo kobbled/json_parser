@@ -40,6 +40,7 @@ typedef struct JSONParser {
   char *json_string;
   int length;
   int index;
+  int prev_index;
   JSONObject *root;
   JSONObject *current_object;
   JSONArray *current_array;
@@ -50,9 +51,22 @@ void json_parser_init(JSONParser *parser, char *json_string) {
   parser->json_string = json_string;
   parser->length = strlen(json_string);
   parser->index = 0;
+  parser->prev_index = -1;
   parser->root = NULL;
   parser->current_object = NULL;
   parser->current_array = NULL;
+}
+
+//Initialize a new JSONObject
+JSONObject* json_object_init(int type) {
+  JSONObject *object = malloc(sizeof(JSONObject));
+  object->key = NULL;
+  object->type = type;
+  object->string_value = NULL;
+  object->number_value = 0;
+  object->next = NULL;
+
+  return object;
 }
 
 //skip whitespace in JSONParser
@@ -118,18 +132,21 @@ void json_parser_parse_next(JSONParser *parser) {
       printf("value: %s , index: %d\n", parser->current_array->string_value, parser->index);
     }
   //parse value to proper JSON_TYPE
-  //values of object, array, and string are recursed
+  //recurse out to parent, as string might be a key, and needs to be handled
+  //to move to the value
   } else if (c == ':') {
     // Skip ':'
     parser->index++;
     // Skip whitespace
     json_parser_skip_whitespace(parser);
 
-    if (isdigit(c) || c == '-') {
+    json_parser_parse_next(parser);
+
+  } else if (isdigit(c) || c == '-') {
       // Parse number value
       char *start = parser->json_string + parser->index;
       char *end = start;
-      while (parser->index < parser->length && (isdigit(*end) || *end == '.')) {
+      while (parser->index < parser->length && (isdigit(*end) || *end == '-' || *end == '.')) {
         parser->index++;
         end++;
       }
@@ -192,40 +209,56 @@ void json_parser_parse_next(JSONParser *parser) {
       }
 
       printf("value: null , index: %d\n", parser->index);
-    } else {
-      // parse if object, array, or string
-      json_parser_parse_next(parser);
-    }
 
   } else if (c == '{') {
     // Parse object
     parser->index++;
 
     // Create new object
-    JSONObject *object = malloc(sizeof(JSONObject));
-    object->key = NULL;
-    object->type = JSON_TYPE_OBJECT;
-    object->string_value = NULL;
-    object->number_value = 0;
-    object->next = NULL;
+    JSONObject *object = json_object_init(JSON_TYPE_OBJECT);
 
-    // Add object to root or current object
+    // Add object to root
+    if (parser->root == NULL) {
+      parser->root = object;
+    }
+    
+    //switch current object to next object
     if (parser->current_object != NULL) {
-      object->key = parser->current_object->key;
-      parser->current_object->key = NULL;
-      object->next = parser->current_object->next;
+      //set as next object in linked list/chain
       parser->current_object->next = object;
+      //set as current object in parser
+      parser->current_object = object;
+    } else if (parser->current_array != NULL) {
+      //link this object to parent array
+      parser->current_array->next = object;
+      //set current_array to null to indicate we are in an object
+      parser->current_array = NULL;
+      //set current_object to this object
       parser->current_object = object;
     } else {
-      parser->root = object;
+      //switch to object from null or array
       parser->current_object = object;
+      parser->current_array = NULL;
     }
 
     // Parse object properties
     while (parser->index < parser->length && parser->json_string[parser->index] != '}') {
+      // Skip whitespace
+      json_parser_skip_whitespace(parser);
+
+      // Create new element
+      JSONObject *element = json_object_init(JSON_TYPE_OBJECT);
+
+      //link to new element in object chain
+      parser->current_object->next = element;
+      parser->current_object = element;
+
       // Parse property key
       json_parser_parse_next(parser);
       char *key = parser->current_object->string_value;
+      //copy key to current object->key
+      parser->current_object->key = key;
+      //null string value
       parser->current_object->string_value = NULL;
 
       #ifdef DEBUG
@@ -238,9 +271,7 @@ void json_parser_parse_next(JSONParser *parser) {
       json_parser_skip_whitespace(parser);
 
       // Parse property value
-      parser->current_object->key = key;
       json_parser_parse_next(parser);
-      parser->current_object->key = NULL;
 
       // Skip whitespace
       json_parser_skip_whitespace(parser);
