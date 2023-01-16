@@ -1,3 +1,4 @@
 tests/
 a.out
 build/
+.vscode/
