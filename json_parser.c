@@ -27,14 +27,6 @@ typedef struct JSONObject {
   struct JSONObject *next;
 } JSONObject;
 
-// JSON array
-typedef struct JSONArray {
-  int type;
-  char *string_value;
-  double number_value;
-  struct JSONArray *next;
-} JSONArray;
-
 // JSON parser
 typedef struct JSONParser {
   char *json_string;
@@ -43,7 +35,7 @@ typedef struct JSONParser {
   int prev_index;
   JSONObject *root;
   JSONObject *current_object;
-  JSONArray *current_array;
+  JSONObject *current_array;
 } JSONParser;
 
 // Initialize the JSON parser
@@ -294,45 +286,54 @@ void json_parser_parse_next(JSONParser *parser) {
     parser->index++;
 
     // Create new array
-    JSONArray *array = malloc(sizeof(JSONArray));
-    array->type = JSON_TYPE_ARRAY;
-    array->string_value = NULL;
-    array->number_value = 0;
-    array->next = NULL;
+    JSONObject *array = json_object_init(JSON_TYPE_ARRAY);
+
+    // Add array to root
+    if (parser->root == NULL) {
+      parser->root = array;
+    }
 
     // Add array to root or current object
     if (parser->current_array != NULL) {
-      array->next = parser->current_array->next;
+      //link to parent node
       parser->current_array->next = array;
+      //switch to this node
+      parser->current_array = array;
+    } else if (parser->current_object != NULL) {
+      //link to parent node
+      parser->current_object->next = array;
+      //set current_object to null to indicate we are in an array
+      parser->current_object = NULL;
+      //switch to this node
       parser->current_array = array;
     } else {
+      //switch to array from object
       parser->current_array = array;
+      parser->current_object = NULL;
     }
 
     // Parse array elements
     while (parser->index < parser->length && parser->json_string[parser->index] != ']') {
-      // Parse array element
-      json_parser_parse_next(parser);
+      
+      // Skip whitespace
+      json_parser_skip_whitespace(parser);
 
       // Create new element
-      JSONArray *element = malloc(sizeof(JSONArray));
-      element->type = parser->current_array->type;
-      element->string_value = parser->current_array->string_value;
-      element->number_value = parser->current_array->number_value;
-      element->next = NULL;
+      JSONObject *element = json_object_init(JSON_TYPE_ARRAY);
 
-      // Add element to array
-      element->next = parser->current_array->next;
-      parser->current_array->type = JSON_TYPE_ARRAY;
-      parser->current_array->string_value = NULL;
-      parser->current_array->number_value = 0;
+      //add to parent node
       parser->current_array->next = element;
+      //index to this object
+      parser->current_array = element;
+      
+      // Parse array element
+      json_parser_parse_next(parser);
 
       // Skip whitespace
       json_parser_skip_whitespace(parser);
 
       // Skip ',' separator
-      if (parser->index < parser->length && parser->json_string[parser->index] == ',') {
+      if (parser->json_string[parser->index] == ',') {
         parser->index++;
       }
     }
