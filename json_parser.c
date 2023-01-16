@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <ctype.h>
 
+#define DEBUG 1
+
 // Maximum JSON string length
 #define MAX_JSON_STRING_LENGTH 1024
 
@@ -70,8 +72,16 @@ void json_parser_parse_next(JSONParser *parser) {
     return;
   }
 
+#ifdef DEBUG
+    if (parser->prev_index != parser->index) {
+      // printf("prev: %d, curr %d \n", parser->prev_index, parser->index);
+      printf("index: %d, char: %c \n", parser->index, parser->json_string[parser->index]);
+    }
+#endif
+
   // Parse value based on first character
   char c = parser->json_string[parser->index];
+
   if (c == '"') {
     // Parse string value
     parser->index++;
@@ -81,8 +91,17 @@ void json_parser_parse_next(JSONParser *parser) {
       parser->index++;
       end++;
     }
+
     *end = '\0';
     parser->index++;
+    
+    #ifdef DEBUG
+      printf("found string: %s\n", strdup(start));
+    #endif
+
+    #ifdef DEBUG
+      parser->prev_index = parser->index + 1;
+    #endif
     
     // Add value to current object or array
     if (parser->current_object != NULL) {
@@ -118,6 +137,14 @@ void json_parser_parse_next(JSONParser *parser) {
       parser->index++;
       double value = strtod(start, NULL);
 
+      #ifdef DEBUG
+        printf("found number: %lf\n", value);
+      #endif
+
+      #ifdef DEBUG
+        parser->prev_index = parser->index + 1;
+      #endif
+
       // Add value to current object or array
       if (parser->current_object != NULL) {
         parser->current_object->type = JSON_TYPE_NUMBER;
@@ -139,6 +166,7 @@ void json_parser_parse_next(JSONParser *parser) {
         parser->current_array->type = JSON_TYPE_TRUE;
       }
       printf("value: true , index: %d\n", parser->index);
+
     } else if (c == 'f') {
       // Parse false value
       parser->index += 5;
@@ -151,6 +179,7 @@ void json_parser_parse_next(JSONParser *parser) {
       }
 
       printf("value: false , index: %d\n", parser->index);
+
     } else if (c == 'n') {
       // Parse null value
       parser->index += 4;
@@ -198,7 +227,12 @@ void json_parser_parse_next(JSONParser *parser) {
       json_parser_parse_next(parser);
       char *key = parser->current_object->string_value;
       parser->current_object->string_value = NULL;
+
+      #ifdef DEBUG
+        if (parser->prev_index != parser->index) {
       printf("key: %s , index: %d\n", key, parser->index);
+        }
+      #endif
 
       // Skip whitespace
       json_parser_skip_whitespace(parser);
@@ -220,10 +254,10 @@ void json_parser_parse_next(JSONParser *parser) {
     // Skip '}'
     parser->index++;
 
-    // Set current object to parent object
-    if (parser->current_object != NULL) {
-      parser->current_object = parser->current_object->next;
-    }
+    #ifdef DEBUG
+      parser->prev_index = parser->index + 1;
+    #endif
+
   } else if (c == '[') {
     // Parse array
     parser->index++;
@@ -275,14 +309,10 @@ void json_parser_parse_next(JSONParser *parser) {
     // Skip ']'
     parser->index++;
 
-  } else if (c == ']') {
-    // Skip ']'
-    parser->index++;
+    #ifdef DEBUG
+      parser->prev_index = parser->index + 1;
+    #endif
 
-    // Set current array to parent array
-    if (parser->current_array != NULL) {
-      parser->current_array = parser->current_array->next;
-    }
   }
 }
 
