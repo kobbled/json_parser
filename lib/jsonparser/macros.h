@@ -1,0 +1,16 @@
+#ifndef JSONPARSER_MACROS_H
+#define JSONPARSER_MACROS_H
+
+// Maximum JSON string length
+#define MAX_JSON_STRING_LENGTH 1024
+
+// JSON value types
+#define JSON_TYPE_STRING 1
+#define JSON_TYPE_NUMBER 2
+#define JSON_TYPE_OBJECT 3
+#define JSON_TYPE_ARRAY 4
+#define JSON_TYPE_TRUE 5
+#define JSON_TYPE_FALSE 6
+#define JSON_TYPE_NULL 7
+
+#endif /* JSONPARSER_MACROS_H */

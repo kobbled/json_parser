@@ -1,42 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <ctype.h>
 
+#include "jsonparser.h"
+
+
 #define DEBUG 1
-
-// Maximum JSON string length
-#define MAX_JSON_STRING_LENGTH 1024
-
-// JSON value types
-#define JSON_TYPE_STRING 1
-#define JSON_TYPE_NUMBER 2
-#define JSON_TYPE_OBJECT 3
-#define JSON_TYPE_ARRAY 4
-#define JSON_TYPE_TRUE 5
-#define JSON_TYPE_FALSE 6
-#define JSON_TYPE_NULL 7
-
-// JSON object
-typedef struct JSONObject {
-  char *key;
-  int type;
-  char *string_value;
-  double number_value;
-  struct JSONObject *next;
-} JSONObject;
-
-// JSON parser
-typedef struct JSONParser {
-  char *json_string;
-  int length;
-  int index;
-  int prev_index;
-  JSONObject *root;
-  JSONObject *current_object;
-  JSONObject *current_array;
-} JSONParser;
 
 // Initialize the JSON parser
 void json_parser_init(JSONParser *parser, char *json_string) {
@@ -61,12 +31,14 @@ JSONObject* json_object_init(int type) {
   return object;
 }
 
+
 //skip whitespace in JSONParser
 void json_parser_skip_whitespace(JSONParser *parser) {
   while (parser->index < parser->length && isspace(parser->json_string[parser->index])) {
     parser->index++;
   }
 }
+
 
 // Parse the next JSON value
 void json_parser_parse_next(JSONParser *parser) {
@@ -346,77 +318,4 @@ void json_parser_parse_next(JSONParser *parser) {
     #endif
 
   }
-}
-
-void test_simple_object() {
-  // Parse simple object
-  char json_string[] = "{\"key1\":\"value1\",\"key2\":123}";
-  printf("parsing: %s\n", json_string);
-
-  JSONParser parser;
-  json_parser_init(&parser, json_string);
-  json_parser_parse_next(&parser);
-
-  //root object
-  assert(parser.root->type == JSON_TYPE_OBJECT);
-  assert(parser.root->key == NULL);
-  assert(parser.root->string_value == NULL);
-  assert(parser.root->number_value == 0);
-  
-  // "key1":"value1
-  assert(parser.root->next->type == JSON_TYPE_STRING);
-  assert(strcmp(parser.root->next->key, "key1") == 0);
-  assert(strcmp(parser.root->next->string_value, "value1") == 0);
-  assert(parser.root->next->number_value == 0);
-
-  // "key2":123
-  assert(parser.root->next->next->type == JSON_TYPE_NUMBER);
-  assert(strcmp(parser.root->next->next->key, "key2") == 0);
-  assert(parser.root->next->next->string_value == NULL);
-  assert(parser.root->next->next->number_value == 123);
-  assert(parser.root->next->next->next == NULL);
-
-}
-
-void test_simple_array() {
-  // Parse simple object
-  char json_string[] = "[\"value1\",\"value2\",-123,3.14159]";
-  printf("parsing: %s\n", json_string);
-
-  JSONParser parser;
-  json_parser_init(&parser, json_string);
-  json_parser_parse_next(&parser);
-
-  assert(parser.root->type == JSON_TYPE_ARRAY);
-  assert(parser.root->string_value == NULL);
-  assert(parser.root->number_value == 0);
-  // "value1"
-  assert(parser.root->next->type == JSON_TYPE_STRING);
-  assert(strcmp(parser.root->next->string_value, "value1") == 0);
-  assert(parser.root->next->number_value == 0);
-  // "value2"
-  assert(parser.root->next->next->type == JSON_TYPE_STRING);
-  assert(strcmp(parser.root->next->next->string_value, "value2") == 0);
-  assert(parser.root->next->next->number_value == 0);
-  // 123
-  assert(parser.root->next->next->next->type == JSON_TYPE_NUMBER);
-  assert(parser.root->next->next->next->string_value == NULL);
-  assert(parser.root->next->next->next->number_value == -123);
-  // 3.14159
-  assert(parser.root->next->next->next->next->type == JSON_TYPE_NUMBER);
-  assert(parser.root->next->next->next->next->string_value == NULL);
-  assert(parser.root->next->next->next->next->number_value == 3.14159);
-
-
-}
-
-
-// Test the JSON parser
-void tests() {
-  test_simple_object();
-  test_simple_array();
-}
-
-void main() {
-  tests();
 }
