@@ -31,4 +31,10 @@ void json_parser_init(JSONParser *parser, char *json_string);
 //Initialize a new JSONObject
 JSONObject* json_object_init(int type);
 
+//Destruct JSON parser
+void json_parser_reset(JSONParser *parser);
+
+//Destruct JSON object
+void json_parser_object_free(JSONObject *object);
+
 #endif /* JSONPARSER_TYPES_H */

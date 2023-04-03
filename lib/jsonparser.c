@@ -6,7 +6,7 @@
 #include "jsonparser.h"
 
 
-#define DEBUG 1
+//define DEBUG 1
 
 // Initialize the JSON parser
 void json_parser_init(JSONParser *parser, char *json_string) {
@@ -29,6 +29,50 @@ JSONObject* json_object_init(int type) {
   object->next = NULL;
 
   return object;
+}
+
+//destruct parser
+void json_parser_reset(JSONParser *parser) {
+  //free all objects
+  json_parser_object_free(parser->root);
+  
+  if (parser->current_object != NULL) {
+    parser->current_object = NULL;
+  }
+
+  if (parser->current_array != NULL) {
+    parser->current_array = NULL;
+  }
+
+  //free root
+  parser->json_string = "";
+  parser->length = 0;
+  parser->index = 0;
+  parser->prev_index = -1;
+}
+
+void json_parser_object_free(JSONObject *object) {
+  if (object == NULL) {
+    return;
+  }
+
+  if (object->key != NULL) {
+    free(object->key);
+    object->key = NULL;
+  }
+
+  if (object->string_value != NULL) {
+    free(object->string_value);
+    object->string_value = NULL;
+  }
+
+  if (object->next != NULL) {
+    json_parser_object_free(object->next);
+    object->next = NULL;
+  }
+
+  free(object);
+  object = NULL;
 }
 
 
@@ -70,7 +114,7 @@ void json_parser_parse_next(JSONParser *parser) {
       end++;
     }
 
-    *end = '\0';
+    //*end = '\0';
     parser->index++;
 
     #ifdef DEBUG
@@ -86,14 +130,18 @@ void json_parser_parse_next(JSONParser *parser) {
       parser->current_object->type = JSON_TYPE_STRING;
       parser->current_object->string_value = strdup(start);
 
+    #ifdef DEBUG
       if (parser->current_object->key != NULL) {
         printf("value: %s , index: %d\n", parser->current_object->string_value, parser->index);
       }
+    #endif
     } else if (parser->current_array != NULL) {
       parser->current_array->type = JSON_TYPE_STRING;
       parser->current_array->string_value = strdup(start);
 
+    #ifdef DEBUG
       printf("value: %s , index: %d\n", parser->current_array->string_value, parser->index);
+    #endif
     }
   //parse value to proper JSON_TYPE
   //recurse out to parent, as string might be a key, and needs to be handled
@@ -114,7 +162,7 @@ void json_parser_parse_next(JSONParser *parser) {
         parser->index++;
         end++;
       }
-      *end = '\0';
+      //*end = '\0';
       parser->index++;
       double value = strtod(start, NULL);
 
@@ -130,11 +178,15 @@ void json_parser_parse_next(JSONParser *parser) {
       if (parser->current_object != NULL) {
         parser->current_object->type = JSON_TYPE_NUMBER;
         parser->current_object->number_value = value;
+      #ifdef DEBUG
         printf("value: %lf , index: %d\n", parser->current_object->number_value, parser->index);
+      #endif
       } else if (parser->current_array != NULL) {
         parser->current_array->type = JSON_TYPE_NUMBER;
         parser->current_array->number_value = value;
+      #ifdef DEBUG
         printf("value: %lf , index: %d\n", parser->current_array->number_value, parser->index);
+      #endif
       }
   } else if (c == 't') {
       // Parse true value
@@ -146,7 +198,9 @@ void json_parser_parse_next(JSONParser *parser) {
       } else if (parser->current_array != NULL) {
         parser->current_array->type = JSON_TYPE_TRUE;
       }
-      printf("value: true , index: %d\n", parser->index);
+      #ifdef DEBUG
+        printf("value: true , index: %d\n", parser->index);
+      #endif
 
   } else if (c == 'f') {
       // Parse false value
@@ -158,8 +212,9 @@ void json_parser_parse_next(JSONParser *parser) {
       } else if (parser->current_array != NULL) {
         parser->current_array->type = JSON_TYPE_FALSE;
       }
-
-      printf("value: false , index: %d\n", parser->index);
+      #ifdef DEBUG
+        printf("value: false , index: %d\n", parser->index);
+      #endif
 
   } else if (c == 'n') {
       // Parse null value
@@ -172,7 +227,9 @@ void json_parser_parse_next(JSONParser *parser) {
         parser->current_array->type = JSON_TYPE_NULL;
       }
 
-      printf("value: null , index: %d\n", parser->index);
+      #ifdef DEBUG
+        printf("value: null , index: %d\n", parser->index);
+      #endif
 
   } else if (c == '{') {
     // Parse object
