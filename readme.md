@@ -16,7 +16,7 @@ Compile project with
 Build Library
 
 ```
- bazel build lib:ParserLib
+ bazel build lib:jsonParser
 ```
 
 Just compile and run tests with
